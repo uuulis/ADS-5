@@ -1,80 +1,89 @@
-// Copyright 2025 NNTU-CS
-#include <cctype>
-#include <sstream>
+// Copyright 2026 NNTU-CS
 #include <string>
-
+#include <cctype>
 #include "tstack.h"
 
-namespace {
-
-int priority(char op) {
-  if (op == '+' || op == '-') return 1;
-  if (op == '*' || op == '/') return 2;
-  return 0;
+int getPriority(const char op) {
+  if (op == '(') return 0;
+  if (op == ')') return 1;
+  if (op == '+' || op == '-') return 2;
+  if (op == '*' || op == '/') return 3;
+  return -1;
 }
-
-}  // namespace
 
 std::string infx2pstfx(const std::string& inf) {
-  TStack<char, 100> stack;
-  std::string out;
-  size_t i = 0;
-  while (i < inf.length()) {
-    char c = inf[i];
-    if (std::isdigit(static_cast<unsigned char>(c))) {
-      std::string num;
-      while (i < inf.length() && std::isdigit(static_cast<unsigned char>(inf[i]))) {
-        num += inf[i];
-        ++i;
+  TStack<char, 100> opStack;
+  std::string postfix;
+
+  for (size_t i = 0; i < inf.length(); ++i) {
+    char ch = inf[i];
+    if (std::isspace(static_cast<unsigned char>(ch))) continue;
+
+    if (std::isdigit(static_cast<unsigned char>(ch))) {
+      // do-while avoids knownConditionTrueFalse in cppcheck
+      do {
+        postfix += inf[i++];
+      } while (i < inf.length() &&
+               std::isdigit(static_cast<unsigned char>(inf[i])));
+      postfix += ' ';
+      i--;
+    } else if (ch == '(') {
+      opStack.push(ch);
+    } else if (ch == ')') {
+      while (!opStack.isEmpty() && opStack.get() != '(') {
+        postfix += opStack.get();
+        postfix += ' ';
+        opStack.pop();
       }
-      out += num + ' ';
-      continue;
-    } else if (c == '(') {
-      stack.push(c);
-    } else if (c == ')') {
-      while (!stack.isEmpty() && stack.getTop() != '(') {
-        out += stack.pop();
-        out += ' ';
+      if (!opStack.isEmpty()) opStack.pop();
+    } else {
+      int priority = getPriority(ch);
+      while (!opStack.isEmpty() && getPriority(opStack.get()) >= priority) {
+        postfix += opStack.get();
+        postfix += ' ';
+        opStack.pop();
       }
-      if (!stack.isEmpty() && stack.getTop() == '(') {
-        stack.pop();
-      }
-    } else if (c == '+' || c == '-' || c == '*' || c == '/') {
-      while (!stack.isEmpty() && priority(stack.getTop()) >= priority(c) &&
-             stack.getTop() != '(') {
-        out += stack.pop();
-        out += ' ';
-      }
-      stack.push(c);
+      opStack.push(ch);
     }
-    ++i;
   }
-  while (!stack.isEmpty()) {
-    out += stack.pop();
-    out += ' ';
+
+  while (!opStack.isEmpty()) {
+    postfix += opStack.get();
+    postfix += ' ';
+    opStack.pop();
   }
-  return out;
+
+  if (!postfix.empty() && postfix.back() == ' ') {
+    postfix.pop_back();
+  }
+  return postfix;
 }
 
-int eval(const std::string& post) {
-  TStack<int, 100> stack;
-  std::istringstream iss(post);
-  std::string token;
-  while (iss >> token) {
-    if (std::isdigit(static_cast<unsigned char>(token[0]))) {
-      stack.push(std::stoi(token));
+int eval(const std::string& pref) {
+  TStack<int, 100> valStack;
+
+  for (size_t i = 0; i < pref.length(); ++i) {
+    if (std::isspace(static_cast<unsigned char>(pref[i]))) continue;
+
+    if (std::isdigit(static_cast<unsigned char>(pref[i]))) {
+      std::string num;
+      do {
+        num += pref[i++];
+      } while (i < pref.length() &&
+               std::isdigit(static_cast<unsigned char>(pref[i])));
+      valStack.push(std::stoi(num));
+      i--;
     } else {
-      int right = stack.pop();
-      int left = stack.pop();
-      int result = 0;
-      switch (token[0]) {
-        case '+': result = left + right; break;
-        case '-': result = left - right; break;
-        case '*': result = left * right; break;
-        case '/': result = left / right; break;
-      }
-      stack.push(result);
+      int v2 = valStack.get();
+      valStack.pop();
+      int v1 = valStack.get();
+      valStack.pop();
+
+      if (pref[i] == '+') valStack.push(v1 + v2);
+      else if (pref[i] == '-') valStack.push(v1 - v2);
+      else if (pref[i] == '*') valStack.push(v1 * v2);
+      else if (pref[i] == '/') valStack.push(v1 / v2);
     }
   }
-  return stack.pop();
+  return valStack.get();
 }
