@@ -1,71 +1,55 @@
 // Copyright 2025 NNTU-CS
 #include <string>
-#include <map>
 #include <cctype>
 #include <sstream>
 #include "tstack.h"
 
 int priority(char op) {
-    static const std::map<char, int> prio = {
-        {'+', 1}, {'-', 1},
-        {'*', 2}, {'/', 2}
-    };
-    auto it = prio.find(op);
-    return (it != prio.end()) ? it->second : 0;
-}
-
-bool isOperator(char c) {
-    return c == '+' || c == '-' || c == '*' || c == '/';
+    if (op == '+' || op == '-') return 1;
+    if (op == '*' || op == '/') return 2;
+    return 0;
 }
 
 std::string infx2pstfx(const std::string& inf) {
     TStack<char, 100> stack;
-    std::string result;
+    std::string out;
     size_t i = 0;
     while (i < inf.length()) {
         char c = inf[i];
         if (std::isdigit(c)) {
+            // собираем многозначное число
+            std::string num;
             while (i < inf.length() && std::isdigit(inf[i])) {
-                result += inf[i];
+                num += inf[i];
                 ++i;
             }
-            result += ' ';
-            continue;
+            out += num + ' ';
+            continue; // i уже увеличено
         } else if (c == '(') {
             stack.push(c);
-            ++i;
         } else if (c == ')') {
-            while (!stack.isEmpty() && stack.top() != '(') {
-                result += stack.top();
-                result += ' ';
-                stack.pop();
+            while (!stack.isEmpty() && stack.getTop() != '(') {
+                out += stack.pop();
+                out += ' ';
             }
-            if (!stack.isEmpty() && stack.top() == '(') {
-                stack.pop();
+            if (!stack.isEmpty() && stack.getTop() == '(') {
+                stack.pop(); // удаляем '('
             }
-            ++i;
-        } else if (isOperator(c)) {
-            while (!stack.isEmpty() && stack.top() != '(' &&
-                   priority(stack.top()) >= priority(c)) {
-                result += stack.top();
-                result += ' ';
-                stack.pop();
+        } else if (c == '+' || c == '-' || c == '*' || c == '/') {
+            while (!stack.isEmpty() && priority(stack.getTop()) >= priority(c) && stack.getTop() != '(') {
+                out += stack.pop();
+                out += ' ';
             }
             stack.push(c);
-            ++i;
-        } else {
-            ++i;
         }
+        // пропускаем пробелы во входной строке (если есть)
+        ++i;
     }
     while (!stack.isEmpty()) {
-        result += stack.top();
-        result += ' ';
-        stack.pop();
+        out += stack.pop();
+        out += ' ';
     }
-    if (!result.empty() && result.back() == ' ') {
-        result.pop_back();
-    }
-    return result;
+    return out;
 }
 
 int eval(const std::string& post) {
@@ -73,20 +57,20 @@ int eval(const std::string& post) {
     std::istringstream iss(post);
     std::string token;
     while (iss >> token) {
-        if (token.length() == 1 && isOperator(token[0])) {
-            int right = stack.top(); stack.pop();
-            int left  = stack.top(); stack.pop();
-            int res = 0;
-            switch (token[0]) {
-                case '+': res = left + right; break;
-                case '-': res = left - right; break;
-                case '*': res = left * right; break;
-                case '/': res = left / right; break;
-            }
-            stack.push(res);
-        } else {
+        if (std::isdigit(token[0])) {
             stack.push(std::stoi(token));
+        } else {
+            int right = stack.pop();
+            int left = stack.pop();
+            int result = 0;
+            switch (token[0]) {
+                case '+': result = left + right; break;
+                case '-': result = left - right; break;
+                case '*': result = left * right; break;
+                case '/': result = left / right; break;
+            }
+            stack.push(result);
         }
     }
-    return stack.isEmpty() ? 0 : stack.top();
+    return stack.pop();
 }
