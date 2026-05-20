@@ -15,7 +15,8 @@ std::string infx2pstfx(const std::string& infixExpression) {
   TStack<char, 100> operatorStack;
   std::string postfixExpression;
 
-  for (size_t position = 0; position < infixExpression.length(); ++position) {
+  for (size_t position = 0; position < infixExpression.length();
+       ++position) {
     char currentChar = infixExpression[position];
     if (std::isspace(static_cast<unsigned char>(currentChar))) continue;
 
@@ -23,7 +24,8 @@ std::string infx2pstfx(const std::string& infixExpression) {
       do {
         postfixExpression += infixExpression[position++];
       } while (position < infixExpression.length() &&
-               std::isdigit(static_cast<unsigned char>(infixExpression[position])));
+               std::isdigit(static_cast<unsigned char>(
+                   infixExpression[position])));
       postfixExpression += ' ';
       position--;
     } else if (currentChar == '(') {
@@ -37,7 +39,8 @@ std::string infx2pstfx(const std::string& infixExpression) {
       if (!operatorStack.isEmpty()) operatorStack.pop();
     } else {
       int currentPriority = getPriority(currentChar);
-      while (!operatorStack.isEmpty() && getPriority(operatorStack.get()) >= currentPriority) {
+      while (!operatorStack.isEmpty() &&
+             getPriority(operatorStack.get()) >= currentPriority) {
         postfixExpression += operatorStack.get();
         postfixExpression += ' ';
         operatorStack.pop();
@@ -62,14 +65,17 @@ int eval(const std::string& prefixExpression) {
   TStack<int, 100> valueStack;
 
   for (size_t index = 0; index < prefixExpression.length(); ++index) {
-    if (std::isspace(static_cast<unsigned char>(prefixExpression[index]))) continue;
+    if (std::isspace(static_cast<unsigned char>(
+        prefixExpression[index]))) continue;
 
-    if (std::isdigit(static_cast<unsigned char>(prefixExpression[index]))) {
+    if (std::isdigit(static_cast<unsigned char>(
+        prefixExpression[index]))) {
       std::string numberBuffer;
       do {
         numberBuffer += prefixExpression[index++];
       } while (index < prefixExpression.length() &&
-               std::isdigit(static_cast<unsigned char>(prefixExpression[index])));
+               std::isdigit(static_cast<unsigned char>(
+                   prefixExpression[index])));
       valueStack.push(std::stoi(numberBuffer));
       index--;
     } else {
@@ -78,10 +84,15 @@ int eval(const std::string& prefixExpression) {
       int firstOperand = valueStack.get();
       valueStack.pop();
 
-      if (prefixExpression[index] == '+') valueStack.push(firstOperand + secondOperand);
-      else if (prefixExpression[index] == '-') valueStack.push(firstOperand - secondOperand);
-      else if (prefixExpression[index] == '*') valueStack.push(firstOperand * secondOperand);
-      else if (prefixExpression[index] == '/') valueStack.push(firstOperand / secondOperand);
+      if (prefixExpression[index] == '+') {
+        valueStack.push(firstOperand + secondOperand);
+      } else if (prefixExpression[index] == '-') {
+        valueStack.push(firstOperand - secondOperand);
+      } else if (prefixExpression[index] == '*') {
+        valueStack.push(firstOperand * secondOperand);
+      } else if (prefixExpression[index] == '/') {
+        valueStack.push(firstOperand / secondOperand);
+      }
     }
   }
   return valueStack.get();
