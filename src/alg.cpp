@@ -3,87 +3,86 @@
 #include <cctype>
 #include "tstack.h"
 
-int getPriority(const char op) {
-  if (op == '(') return 0;
-  if (op == ')') return 1;
-  if (op == '+' || op == '-') return 2;
-  if (op == '*' || op == '/') return 3;
+int getPriority(const char operation) {
+  if (operation == '(') return 0;
+  if (operation == ')') return 1;
+  if (operation == '+' || operation == '-') return 2;
+  if (operation == '*' || operation == '/') return 3;
   return -1;
 }
 
-std::string infx2pstfx(const std::string& inf) {
-  TStack<char, 100> opStack;
-  std::string postfix;
+std::string infx2pstfx(const std::string& infixExpression) {
+  TStack<char, 100> operatorStack;
+  std::string postfixExpression;
 
-  for (size_t i = 0; i < inf.length(); ++i) {
-    char ch = inf[i];
-    if (std::isspace(static_cast<unsigned char>(ch))) continue;
+  for (size_t position = 0; position < infixExpression.length(); ++position) {
+    char currentChar = infixExpression[position];
+    if (std::isspace(static_cast<unsigned char>(currentChar))) continue;
 
-    if (std::isdigit(static_cast<unsigned char>(ch))) {
-      // do-while avoids knownConditionTrueFalse in cppcheck
+    if (std::isdigit(static_cast<unsigned char>(currentChar))) {
       do {
-        postfix += inf[i++];
-      } while (i < inf.length() &&
-               std::isdigit(static_cast<unsigned char>(inf[i])));
-      postfix += ' ';
-      i--;
-    } else if (ch == '(') {
-      opStack.push(ch);
-    } else if (ch == ')') {
-      while (!opStack.isEmpty() && opStack.get() != '(') {
-        postfix += opStack.get();
-        postfix += ' ';
-        opStack.pop();
+        postfixExpression += infixExpression[position++];
+      } while (position < infixExpression.length() &&
+               std::isdigit(static_cast<unsigned char>(infixExpression[position])));
+      postfixExpression += ' ';
+      position--;
+    } else if (currentChar == '(') {
+      operatorStack.push(currentChar);
+    } else if (currentChar == ')') {
+      while (!operatorStack.isEmpty() && operatorStack.get() != '(') {
+        postfixExpression += operatorStack.get();
+        postfixExpression += ' ';
+        operatorStack.pop();
       }
-      if (!opStack.isEmpty()) opStack.pop();
+      if (!operatorStack.isEmpty()) operatorStack.pop();
     } else {
-      int priority = getPriority(ch);
-      while (!opStack.isEmpty() && getPriority(opStack.get()) >= priority) {
-        postfix += opStack.get();
-        postfix += ' ';
-        opStack.pop();
+      int currentPriority = getPriority(currentChar);
+      while (!operatorStack.isEmpty() && getPriority(operatorStack.get()) >= currentPriority) {
+        postfixExpression += operatorStack.get();
+        postfixExpression += ' ';
+        operatorStack.pop();
       }
-      opStack.push(ch);
+      operatorStack.push(currentChar);
     }
   }
 
-  while (!opStack.isEmpty()) {
-    postfix += opStack.get();
-    postfix += ' ';
-    opStack.pop();
+  while (!operatorStack.isEmpty()) {
+    postfixExpression += operatorStack.get();
+    postfixExpression += ' ';
+    operatorStack.pop();
   }
 
-  if (!postfix.empty() && postfix.back() == ' ') {
-    postfix.pop_back();
+  if (!postfixExpression.empty() && postfixExpression.back() == ' ') {
+    postfixExpression.pop_back();
   }
-  return postfix;
+  return postfixExpression;
 }
 
-int eval(const std::string& pref) {
-  TStack<int, 100> valStack;
+int eval(const std::string& prefixExpression) {
+  TStack<int, 100> valueStack;
 
-  for (size_t i = 0; i < pref.length(); ++i) {
-    if (std::isspace(static_cast<unsigned char>(pref[i]))) continue;
+  for (size_t index = 0; index < prefixExpression.length(); ++index) {
+    if (std::isspace(static_cast<unsigned char>(prefixExpression[index]))) continue;
 
-    if (std::isdigit(static_cast<unsigned char>(pref[i]))) {
-      std::string num;
+    if (std::isdigit(static_cast<unsigned char>(prefixExpression[index]))) {
+      std::string numberBuffer;
       do {
-        num += pref[i++];
-      } while (i < pref.length() &&
-               std::isdigit(static_cast<unsigned char>(pref[i])));
-      valStack.push(std::stoi(num));
-      i--;
+        numberBuffer += prefixExpression[index++];
+      } while (index < prefixExpression.length() &&
+               std::isdigit(static_cast<unsigned char>(prefixExpression[index])));
+      valueStack.push(std::stoi(numberBuffer));
+      index--;
     } else {
-      int v2 = valStack.get();
-      valStack.pop();
-      int v1 = valStack.get();
-      valStack.pop();
+      int secondOperand = valueStack.get();
+      valueStack.pop();
+      int firstOperand = valueStack.get();
+      valueStack.pop();
 
-      if (pref[i] == '+') valStack.push(v1 + v2);
-      else if (pref[i] == '-') valStack.push(v1 - v2);
-      else if (pref[i] == '*') valStack.push(v1 * v2);
-      else if (pref[i] == '/') valStack.push(v1 / v2);
+      if (prefixExpression[index] == '+') valueStack.push(firstOperand + secondOperand);
+      else if (prefixExpression[index] == '-') valueStack.push(firstOperand - secondOperand);
+      else if (prefixExpression[index] == '*') valueStack.push(firstOperand * secondOperand);
+      else if (prefixExpression[index] == '/') valueStack.push(firstOperand / secondOperand);
     }
   }
-  return valStack.get();
+  return valueStack.get();
 }
